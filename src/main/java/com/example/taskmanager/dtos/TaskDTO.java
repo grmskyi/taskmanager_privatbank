@@ -1,7 +1,9 @@
 package com.example.taskmanager.dtos;
 
 import com.example.taskmanager.enums.Priority;
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,10 +26,8 @@ public class TaskDTO {
     @Size(max = 1000, message = "Description cannot be longer than 1000 characters")
     private String description;
 
-    @PastOrPresent(message = "Created date cannot be in the future")
     private LocalDateTime createdDate;
 
-    @FutureOrPresent(message = "Due date cannot be in the past")
     private LocalDateTime dueDate;
 
     private Boolean completed;

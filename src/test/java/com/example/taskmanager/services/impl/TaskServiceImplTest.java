@@ -12,18 +12,18 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.*;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataAccessException;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import java.time.LocalDateTime;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @Slf4j
@@ -42,8 +42,8 @@ class TaskServiceImplTest {
     @InjectMocks
     private TaskServiceImpl taskService;
 
-    @Captor
-    private ArgumentCaptor<Task> taskCaptor;
+    @InjectMocks
+    private KafkaServiceImpl kafkaService;
 
     private Task task;
     private TaskDTO taskDTO;
@@ -60,6 +60,7 @@ class TaskServiceImplTest {
                 .build();
 
         task = Task.builder()
+                .id(1L)
                 .title("Test Task")
                 .description("Test Description")
                 .createdDate(LocalDateTime.now())
@@ -67,22 +68,25 @@ class TaskServiceImplTest {
                 .completed(false)
                 .priority(Priority.HIGH)
                 .build();
+
+        taskService = new TaskServiceImpl(taskMapper, taskRepository, kafkaService);
     }
+
     @Test
     void createTasks_shouldCreateTaskSuccessfully() {
         log.info("Starting test: createTasks_shouldCreateTaskSuccessfully");
 
-        when(taskMapper.toEntity(any(TaskDTO.class))).thenReturn(task);
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
-        when(taskMapper.toDto(any(Task.class))).thenReturn(taskDTO);
+        when(taskMapper.toEntity(taskDTO)).thenReturn(task);
+        when(taskRepository.save(task)).thenReturn(task);
+        when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
         TaskDTO result = taskService.createTasks(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
-        verify(taskRepository).save(taskCaptor.capture());
-        verify(kafkaTemplate).send(anyString(), any(TaskDTO.class));
-        assertEquals(task.getTitle(), taskCaptor.getValue().getTitle());
+        verify(taskRepository).save(task);
+        verify(kafkaTemplate).send("taskmanager-topic", taskDTO);
+        assertEquals(task.getTitle(), result.getTitle());
 
         log.info("Task created successfully: {}", result);
     }
@@ -107,7 +111,7 @@ class TaskServiceImplTest {
         log.info("Starting test: createTasks_shouldThrowExceptionWhenTaskTitleExists");
 
         when(taskRepository.count()).thenReturn(10L);
-        when(taskRepository.existsByTitle(anyString())).thenReturn(true);
+        when(taskRepository.existsByTitle("Test Task")).thenReturn(true);
 
         DuplicateTaskException exception = assertThrows(
                 DuplicateTaskException.class, () -> taskService.createTasks(taskDTO)
@@ -122,7 +126,7 @@ class TaskServiceImplTest {
     void getTasksById_shouldReturnTaskWhenExists() {
         log.info("Starting test: getTasksById_shouldReturnTaskWhenExists");
 
-        when(taskRepository.findById(anyLong())).thenReturn(Optional.of(task));
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
 
         Optional<Task> result = taskService.getTasksById(1L);
 
@@ -136,7 +140,7 @@ class TaskServiceImplTest {
     void getTasksById_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: getTasksById_shouldThrowExceptionWhenTaskNotFound");
 
-        when(taskRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(taskRepository.findById(1L)).thenReturn(Optional.empty());
 
         TaskNotFoundException exception = assertThrows(
                 TaskNotFoundException.class, () -> taskService.getTasksById(1L)
@@ -151,9 +155,9 @@ class TaskServiceImplTest {
     void getAllTasks_shouldReturnAllTasks() {
         log.info("Starting test: getAllTasks_shouldReturnAllTasks");
 
-        List<Task> tasks = Arrays.asList(task);
+        List<Task> tasks = Collections.singletonList(task);
         when(taskRepository.findAll()).thenReturn(tasks);
-        when(taskMapper.toDto(any(Task.class))).thenReturn(taskDTO);
+        when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
         List<TaskDTO> result = taskService.getAllTasks();
 
@@ -168,14 +172,15 @@ class TaskServiceImplTest {
     void updateTasks_shouldUpdateTaskWhenExists() {
         log.info("Starting test: updateTasks_shouldUpdateTaskWhenExists");
 
-        when(taskRepository.findById(anyLong())).thenReturn(Optional.of(task));
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
-        when(taskMapper.toDto(any(Task.class))).thenReturn(taskDTO);
+        when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
+        when(taskRepository.save(task)).thenReturn(task);
+        when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
         TaskDTO result = taskService.updateTasks(1L, taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
+        verify(taskRepository).save(task);
 
         log.info("Task updated successfully: {}", result);
     }
@@ -184,7 +189,7 @@ class TaskServiceImplTest {
     void updateTasks_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: updateTasks_shouldThrowExceptionWhenTaskNotFound");
 
-        when(taskRepository.findById(anyLong())).thenReturn(Optional.empty());
+        when(taskRepository.findById(1L)).thenReturn(Optional.empty());
 
         TaskNotFoundException exception = assertThrows(
                 TaskNotFoundException.class, () -> taskService.updateTasks(1L, taskDTO)
@@ -199,14 +204,14 @@ class TaskServiceImplTest {
     void deleteTasks_shouldDeleteTaskWhenExists() {
         log.info("Starting test: deleteTasks_shouldDeleteTaskWhenExists");
 
-        when(taskRepository.existsById(anyLong())).thenReturn(true);
+        when(taskRepository.existsById(1L)).thenReturn(true);
 
         String result = taskService.deleteTasks(1L);
 
         assertNotNull(result);
         assertEquals("Task with ID 1 has been successfully deleted.", result);
 
-        verify(taskRepository).deleteById(anyLong());
+        verify(taskRepository).deleteById(1L);
 
         log.info(result);
     }
@@ -215,7 +220,7 @@ class TaskServiceImplTest {
     void deleteTasks_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: deleteTasks_shouldThrowExceptionWhenTaskNotFound");
 
-        when(taskRepository.existsById(anyLong())).thenReturn(false);
+        when(taskRepository.existsById(1L)).thenReturn(false);
 
         TaskNotFoundException exception = assertThrows(
                 TaskNotFoundException.class, () -> taskService.deleteTasks(1L)
@@ -230,19 +235,19 @@ class TaskServiceImplTest {
     void createTasks_shouldHandleDataAccessExceptionAndSwitchToBackup() {
         log.info("Starting test: createTasks_shouldHandleDataAccessExceptionAndSwitchToBackup");
 
-        when(taskMapper.toEntity(any(TaskDTO.class))).thenReturn(task);
-        when(taskRepository.save(any(Task.class)))
-                .thenThrow(new DataAccessException("Database error") {})
+        when(taskMapper.toEntity(taskDTO)).thenReturn(task);
+        when(taskRepository.save(task))
+                .thenThrow(new DataAccessException("Database error") {
+                })
                 .thenReturn(task);
-        when(taskMapper.toDto(any(Task.class))).thenReturn(taskDTO);
+        when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
         TaskDTO result = taskService.createTasks(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
-        verify(taskRepository, times(2)).save(taskCaptor.capture());
-        verify(kafkaTemplate).send(anyString(), any(TaskDTO.class));
-        assertEquals(task.getTitle(), taskCaptor.getValue().getTitle());
+        verify(taskRepository, times(2)).save(task);
+        verify(kafkaTemplate).send("taskmanager-topic", taskDTO);
 
         log.info("Task created successfully after switching to backup: {}", result);
     }
@@ -252,19 +257,19 @@ class TaskServiceImplTest {
         log.info("Starting test: createTasks_shouldCreateTaskWithValidDetails");
 
         when(taskRepository.count()).thenReturn(0L);
-        when(taskRepository.existsByTitle(anyString())).thenReturn(false);
+        when(taskRepository.existsByTitle("Test Task")).thenReturn(false);
 
-        when(taskMapper.toEntity(any(TaskDTO.class))).thenReturn(task);
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
-        when(taskMapper.toDto(any(Task.class))).thenReturn(taskDTO);
+        when(taskMapper.toEntity(taskDTO)).thenReturn(task);
+        when(taskRepository.save(task)).thenReturn(task);
+        when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
         TaskDTO result = taskService.createTasks(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
-        verify(taskRepository).save(taskCaptor.capture());
-        verify(kafkaTemplate).send(anyString(), any(TaskDTO.class));
-        assertEquals(task.getTitle(), taskCaptor.getValue().getTitle());
+        verify(taskRepository).save(task);
+        verify(kafkaTemplate).send("taskmanager-topic", taskDTO);
+        assertEquals(task.getTitle(), result.getTitle());
 
         log.info("Task created successfully with valid details: {}", result);
     }

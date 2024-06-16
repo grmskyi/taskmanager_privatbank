@@ -2,6 +2,7 @@ package com.example.taskmanager.services.impl;
 
 import com.example.taskmanager.datasource.DatabaseOperationHandler;
 import com.example.taskmanager.dtos.TaskDTO;
+import com.example.taskmanager.enums.Priority;
 import com.example.taskmanager.exceptions.DuplicateTaskException;
 import com.example.taskmanager.exceptions.TaskLimitExceededException;
 import com.example.taskmanager.exceptions.TaskNotFoundException;
@@ -9,30 +10,28 @@ import com.example.taskmanager.mappers.TaskMapper;
 import com.example.taskmanager.models.Task;
 import com.example.taskmanager.repositories.TaskRepository;
 import com.example.taskmanager.services.TaskService;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 
 @Slf4j
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TaskServiceImpl implements TaskService {
 
     private final TaskMapper taskMapper;
     private final TaskRepository taskRepository;
 
-    private final KafkaTemplate<String, Object> kafkaTemplate;
+    private final KafkaServiceImpl kafkaService;
 
     private static final int MAX_TASKS_LIMIT = 100;
-
-    private static final String TASK_TOPIC = "taskmanager-topic";
-
     private static final String TASK_NOT_FOUND_MESSAGE = "Task item with id not found, id: ";
 
     /**
@@ -53,7 +52,7 @@ public class TaskServiceImpl implements TaskService {
 
             TaskDTO savedTaskDTO = taskMapper.toDto(savedTask);
 
-            sendTaskToKafka(savedTaskDTO);
+            kafkaService.sendTaskToKafka(savedTaskDTO);
 
             log.info("Task created successfully: {}", savedTaskDTO);
             return savedTaskDTO;
@@ -158,13 +157,53 @@ public class TaskServiceImpl implements TaskService {
 
 
     /**
-     * Sends the task data to a Kafka topic.
+     * Partially updates fields of an existing task.
      *
-     * @param taskDTO the task data transfer object to be sent to Kafka.
+     * @param id      the ID of the task to be updated.
+     * @param updates a map containing the fields to be updated with their new values.
+     * @return the updated TaskDTO object.
+     * @throws TaskNotFoundException if the task with the specified ID is not found.
      */
-    private void sendTaskToKafka(TaskDTO taskDTO) {
-        kafkaTemplate.send(TASK_TOPIC, taskDTO);
-        log.info("Sent task {} to Kafka topic {}", taskDTO.getId(), TASK_TOPIC);
+    @Override
+    public TaskDTO patchTask(Long id, Map<String, Object> updates) {
+        log.info("Patching task with ID: {}", id);
+        return DatabaseOperationHandler.execute(() -> {
+            Task existingTask = taskRepository.findById(id)
+                    .orElseThrow(() -> new TaskNotFoundException(TASK_NOT_FOUND_MESSAGE + id));
+
+            updates.forEach((field, value) -> updateField(existingTask, field, value));
+
+            Task updatedTask = taskRepository.save(existingTask);
+            TaskDTO updatedTaskDTO = taskMapper.toDto(updatedTask);
+
+            log.info("Task patched successfully: {}", updatedTaskDTO);
+            return updatedTaskDTO;
+        });
+    }
+
+    private void updateField(Task task, String fieldName, Object value) {
+        switch (fieldName) {
+            case "title":
+                task.setTitle((String) value);
+                break;
+            case "description":
+                task.setDescription((String) value);
+                break;
+            case "createdDate":
+                task.setCreatedDate(LocalDateTime.parse((String) value));
+                break;
+            case "dueDate":
+                task.setDueDate(LocalDateTime.parse((String) value));
+                break;
+            case "completed":
+                task.setCompleted((Boolean) value);
+                break;
+            case "priority":
+                task.setPriority(Priority.valueOf((String) value));
+                break;
+            default:
+                throw new IllegalArgumentException("Invalid field: " + fieldName);
+        }
     }
 
 
@@ -173,7 +212,7 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskDTO the task data transfer object to be validated.
      * @throws TaskLimitExceededException if the task limit is exceeded.
-     * @throws DuplicateTaskException      if a task with the same title already exists.
+     * @throws DuplicateTaskException     if a task with the same title already exists.
      */
     private void validateTaskCreation(TaskDTO taskDTO) {
         if (taskRepository.count() >= MAX_TASKS_LIMIT) {

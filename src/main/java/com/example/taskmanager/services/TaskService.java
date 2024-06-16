@@ -4,6 +4,7 @@ import com.example.taskmanager.dtos.TaskDTO;
 import com.example.taskmanager.models.Task;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface TaskService {
@@ -16,4 +17,6 @@ public interface TaskService {
     TaskDTO updateTasks (Long id, TaskDTO taskDTO);
 
     String deleteTasks(Long id);
+
+    TaskDTO patchTask(Long id, Map<String, Object> updates);
 }

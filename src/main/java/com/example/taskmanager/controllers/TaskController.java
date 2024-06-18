@@ -29,9 +29,9 @@ public class TaskController {
             @ApiResponse(responseCode = "201", description = "Successfully created task"),
             @ApiResponse(responseCode = "400", description = "Invalid input")
     })
-    @PostMapping("/tasks")
+    @PostMapping("/task")
     public ResponseEntity<TaskDTO> createTask(@RequestBody @Valid TaskDTO taskDTO) {
-        TaskDTO createdTask = taskService.createTasks(taskDTO);
+        TaskDTO createdTask = taskService.createTask(taskDTO);
         return new ResponseEntity<>(createdTask, HttpStatus.CREATED);
     }
 
@@ -42,7 +42,7 @@ public class TaskController {
     })
     @GetMapping("/task/{id}")
     public ResponseEntity<Task> getTaskById(@PathVariable Long id) {
-        Optional<Task> task = taskService.getTasksById(id);
+        Optional<Task> task = taskService.getTaskById(id);
         return task.map(ResponseEntity::ok)
                 .orElseGet(() -> new ResponseEntity<>(HttpStatus.NOT_FOUND));
     }
@@ -51,7 +51,7 @@ public class TaskController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully retrieved list of tasks")
     })
-    @GetMapping("/tasks")
+    @GetMapping("/task")
     public ResponseEntity<List<TaskDTO>> getAllTasks() {
         List<TaskDTO> taskList = taskService.getAllTasks();
         return ResponseEntity.ok(taskList);
@@ -65,7 +65,7 @@ public class TaskController {
     })
     @PutMapping("/task/{id}")
     public ResponseEntity<TaskDTO> updateTask(@PathVariable Long id, @RequestBody @Valid TaskDTO taskDTO) {
-        TaskDTO updatedTask = taskService.updateTasks(id, taskDTO);
+        TaskDTO updatedTask = taskService.updateTask(id, taskDTO);
         return ResponseEntity.ok(updatedTask);
     }
 
@@ -76,7 +76,7 @@ public class TaskController {
     })
     @DeleteMapping("/task/{id}")
     public ResponseEntity<String> deleteTask(@PathVariable Long id) {
-        String result = taskService.deleteTasks(id);
+        String result = taskService.deleteTask(id);
         return ResponseEntity.ok(result);
     }
 

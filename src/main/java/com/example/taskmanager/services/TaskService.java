@@ -8,15 +8,15 @@ import java.util.Map;
 import java.util.Optional;
 
 public interface TaskService {
-    TaskDTO createTasks (TaskDTO taskDTO);
+    TaskDTO createTask(TaskDTO taskDTO);
 
-    Optional<Task> getTasksById(Long id);
+    Optional<Task> getTaskById(Long id);
 
     List<TaskDTO> getAllTasks();
 
-    TaskDTO updateTasks (Long id, TaskDTO taskDTO);
+    TaskDTO updateTask(Long id, TaskDTO taskDTO);
 
-    String deleteTasks(Long id);
+    String deleteTask(Long id);
 
     TaskDTO patchTask(Long id, Map<String, Object> updates);
 }

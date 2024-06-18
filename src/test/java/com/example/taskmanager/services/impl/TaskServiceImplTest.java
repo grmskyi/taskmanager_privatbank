@@ -80,7 +80,7 @@ class TaskServiceImplTest {
         when(taskRepository.save(task)).thenReturn(task);
         when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
-        TaskDTO result = taskService.createTasks(taskDTO);
+        TaskDTO result = taskService.createTask(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
@@ -92,13 +92,13 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void createTasks_shouldThrowExceptionWhenTaskLimitExceeded() {
+    void createTask_shouldThrowExceptionWhenTaskLimitExceeded() {
         log.info("Starting test: createTasks_shouldThrowExceptionWhenTaskLimitExceeded");
 
         when(taskRepository.count()).thenReturn(100L);
 
         TaskLimitExceededException exception = assertThrows(
-                TaskLimitExceededException.class, () -> taskService.createTasks(taskDTO)
+                TaskLimitExceededException.class, () -> taskService.createTask(taskDTO)
         );
 
         assertEquals("Task limit exceeded", exception.getMessage());
@@ -107,14 +107,14 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void createTasks_shouldThrowExceptionWhenTaskTitleExists() {
+    void createTask_shouldThrowExceptionWhenTaskTitleExists() {
         log.info("Starting test: createTasks_shouldThrowExceptionWhenTaskTitleExists");
 
         when(taskRepository.count()).thenReturn(10L);
         when(taskRepository.existsByTitle("Test Task")).thenReturn(true);
 
         DuplicateTaskException exception = assertThrows(
-                DuplicateTaskException.class, () -> taskService.createTasks(taskDTO)
+                DuplicateTaskException.class, () -> taskService.createTask(taskDTO)
         );
 
         assertEquals("Task with title Test Task already exists", exception.getMessage());
@@ -123,12 +123,12 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void getTasksById_shouldReturnTaskWhenExists() {
+    void getTaskById_shouldReturnTaskWhenExists() {
         log.info("Starting test: getTasksById_shouldReturnTaskWhenExists");
 
         when(taskRepository.findById(1L)).thenReturn(Optional.of(task));
 
-        Optional<Task> result = taskService.getTasksById(1L);
+        Optional<Task> result = taskService.getTaskById(1L);
 
         assertTrue(result.isPresent());
         assertEquals(task.getTitle(), result.get().getTitle());
@@ -137,13 +137,13 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void getTasksById_shouldThrowExceptionWhenTaskNotFound() {
+    void getTaskById_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: getTasksById_shouldThrowExceptionWhenTaskNotFound");
 
         when(taskRepository.findById(1L)).thenReturn(Optional.empty());
 
         TaskNotFoundException exception = assertThrows(
-                TaskNotFoundException.class, () -> taskService.getTasksById(1L)
+                TaskNotFoundException.class, () -> taskService.getTaskById(1L)
         );
 
         assertEquals("Task item with id not found, id: 1", exception.getMessage());
@@ -176,7 +176,7 @@ class TaskServiceImplTest {
         when(taskRepository.save(task)).thenReturn(task);
         when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
-        TaskDTO result = taskService.updateTasks(1L, taskDTO);
+        TaskDTO result = taskService.updateTask(1L, taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
@@ -186,13 +186,13 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void updateTasks_shouldThrowExceptionWhenTaskNotFound() {
+    void updateTask_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: updateTasks_shouldThrowExceptionWhenTaskNotFound");
 
         when(taskRepository.findById(1L)).thenReturn(Optional.empty());
 
         TaskNotFoundException exception = assertThrows(
-                TaskNotFoundException.class, () -> taskService.updateTasks(1L, taskDTO)
+                TaskNotFoundException.class, () -> taskService.updateTask(1L, taskDTO)
         );
 
         assertEquals("Task item with id not found, id: 1", exception.getMessage());
@@ -206,7 +206,7 @@ class TaskServiceImplTest {
 
         when(taskRepository.existsById(1L)).thenReturn(true);
 
-        String result = taskService.deleteTasks(1L);
+        String result = taskService.deleteTask(1L);
 
         assertNotNull(result);
         assertEquals("Task with ID 1 has been successfully deleted.", result);
@@ -217,13 +217,13 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void deleteTasks_shouldThrowExceptionWhenTaskNotFound() {
+    void deleteTask_shouldThrowExceptionWhenTaskNotFound() {
         log.info("Starting test: deleteTasks_shouldThrowExceptionWhenTaskNotFound");
 
         when(taskRepository.existsById(1L)).thenReturn(false);
 
         TaskNotFoundException exception = assertThrows(
-                TaskNotFoundException.class, () -> taskService.deleteTasks(1L)
+                TaskNotFoundException.class, () -> taskService.deleteTask(1L)
         );
 
         assertEquals("Task item with id not found, id: 1", exception.getMessage());
@@ -232,7 +232,7 @@ class TaskServiceImplTest {
     }
 
     @Test
-    void createTasks_shouldHandleDataAccessExceptionAndSwitchToBackup() {
+    void createTask_shouldHandleDataAccessExceptionAndSwitchToBackup() {
         log.info("Starting test: createTasks_shouldHandleDataAccessExceptionAndSwitchToBackup");
 
         when(taskMapper.toEntity(taskDTO)).thenReturn(task);
@@ -242,7 +242,7 @@ class TaskServiceImplTest {
                 .thenReturn(task);
         when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
-        TaskDTO result = taskService.createTasks(taskDTO);
+        TaskDTO result = taskService.createTask(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());
@@ -263,7 +263,7 @@ class TaskServiceImplTest {
         when(taskRepository.save(task)).thenReturn(task);
         when(taskMapper.toDto(task)).thenReturn(taskDTO);
 
-        TaskDTO result = taskService.createTasks(taskDTO);
+        TaskDTO result = taskService.createTask(taskDTO);
 
         assertNotNull(result);
         assertEquals(taskDTO.getTitle(), result.getTitle());

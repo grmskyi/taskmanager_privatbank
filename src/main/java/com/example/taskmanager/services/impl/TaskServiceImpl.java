@@ -41,7 +41,7 @@ public class TaskServiceImpl implements TaskService {
      * @return the created TaskDTO object.
      */
     @Override
-    public TaskDTO createTasks(TaskDTO taskDTO) {
+    public TaskDTO createTask(TaskDTO taskDTO) {
         log.info("Starting task creation for: {}", taskDTO);
         return DatabaseOperationHandler.execute(() -> {
 
@@ -68,7 +68,7 @@ public class TaskServiceImpl implements TaskService {
      * @throws TaskNotFoundException if the task with the specified ID is not found.
      */
     @Override
-    public Optional<Task> getTasksById(Long id) {
+    public Optional<Task> getTaskById(Long id) {
         log.info("Fetching task by ID: {}", id);
         return DatabaseOperationHandler.execute(() -> {
 
@@ -111,7 +111,7 @@ public class TaskServiceImpl implements TaskService {
      * @throws TaskNotFoundException if the task with the specified ID is not found.
      */
     @Override
-    public TaskDTO updateTasks(Long id, TaskDTO taskDTO) {
+    public TaskDTO updateTask(Long id, TaskDTO taskDTO) {
         log.info("Updating task with ID: {}", id);
         return DatabaseOperationHandler.execute(() -> {
 
@@ -138,7 +138,7 @@ public class TaskServiceImpl implements TaskService {
      * @throws TaskNotFoundException if the task with the specified ID is not found.
      */
     @Override
-    public String deleteTasks(Long id) {
+    public String deleteTask(Long id) {
         log.info("Deleting task with ID: {}", id);
 
         return DatabaseOperationHandler.execute(() -> {
@@ -183,26 +183,13 @@ public class TaskServiceImpl implements TaskService {
 
     private void updateField(Task task, String fieldName, Object value) {
         switch (fieldName) {
-            case "title":
-                task.setTitle((String) value);
-                break;
-            case "description":
-                task.setDescription((String) value);
-                break;
-            case "createdDate":
-                task.setCreatedDate(LocalDateTime.parse((String) value));
-                break;
-            case "dueDate":
-                task.setDueDate(LocalDateTime.parse((String) value));
-                break;
-            case "completed":
-                task.setCompleted((Boolean) value);
-                break;
-            case "priority":
-                task.setPriority(Priority.valueOf((String) value));
-                break;
-            default:
-                throw new IllegalArgumentException("Invalid field: " + fieldName);
+            case "title" -> task.setTitle((String) value);
+            case "description" -> task.setDescription((String) value);
+            case "createdDate" -> task.setCreatedDate(LocalDateTime.parse((String) value));
+            case "dueDate" -> task.setDueDate(LocalDateTime.parse((String) value));
+            case "completed" -> task.setCompleted((Boolean) value);
+            case "priority" -> task.setPriority(Priority.valueOf((String) value));
+            default -> throw new IllegalArgumentException("Invalid field: " + fieldName);
         }
     }
 

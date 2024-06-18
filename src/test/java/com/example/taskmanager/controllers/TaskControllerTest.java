@@ -69,9 +69,9 @@ class TaskControllerTest {
 
     @Test
     void createTask_shouldCreateTaskSuccessfully() throws Exception {
-        when(taskService.createTasks(any(TaskDTO.class))).thenReturn(taskDTO);
+        when(taskService.createTask(any(TaskDTO.class))).thenReturn(taskDTO);
 
-        mockMvc.perform(post("/api/v1/tasks")
+        mockMvc.perform(post("/api/v1/task")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(taskDTO)))
                 .andExpect(status().isCreated())
@@ -79,12 +79,12 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.description").value("Test Description"))
                 .andExpect(jsonPath("$.priority").value("HIGH"));
 
-        verify(taskService).createTasks(any(TaskDTO.class));
+        verify(taskService).createTask(any(TaskDTO.class));
     }
 
     @Test
     void getTaskById_shouldReturnTaskWhenExists() throws Exception {
-        when(taskService.getTasksById(1L)).thenReturn(Optional.of(task));
+        when(taskService.getTaskById(1L)).thenReturn(Optional.of(task));
 
         mockMvc.perform(get("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -92,18 +92,18 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.title").value("Test Task"))
                 .andExpect(jsonPath("$.description").value("Test Description"));
 
-        verify(taskService).getTasksById(1L);
+        verify(taskService).getTaskById(1L);
     }
 
     @Test
     void getTaskById_shouldReturn404WhenTaskNotFound() throws Exception {
-        when(taskService.getTasksById(1L)).thenReturn(Optional.empty());
+        when(taskService.getTaskById(1L)).thenReturn(Optional.empty());
 
         mockMvc.perform(get("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(taskService).getTasksById(1L);
+        verify(taskService).getTaskById(1L);
     }
 
     @Test
@@ -111,7 +111,7 @@ class TaskControllerTest {
         List<TaskDTO> tasks = Collections.singletonList(taskDTO);
         when(taskService.getAllTasks()).thenReturn(tasks);
 
-        mockMvc.perform(get("/api/v1/tasks")
+        mockMvc.perform(get("/api/v1/task")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
@@ -123,7 +123,7 @@ class TaskControllerTest {
 
     @Test
     void updateTask_shouldUpdateTaskSuccessfully() throws Exception {
-        when(taskService.updateTasks(1L, taskDTO)).thenReturn(taskDTO);
+        when(taskService.updateTask(1L, taskDTO)).thenReturn(taskDTO);
 
         mockMvc.perform(put("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -133,42 +133,42 @@ class TaskControllerTest {
                 .andExpect(jsonPath("$.description").value("Test Description"))
                 .andExpect(jsonPath("$.priority").value("HIGH"));
 
-        verify(taskService).updateTasks(1L, taskDTO);
+        verify(taskService).updateTask(1L, taskDTO);
     }
 
     @Test
     void updateTask_shouldReturn404WhenTaskNotFound() throws Exception {
-        when(taskService.updateTasks(1L, taskDTO)).thenThrow(new TaskNotFoundException("Task item with id not found, id: 1"));
+        when(taskService.updateTask(1L, taskDTO)).thenThrow(new TaskNotFoundException("Task item with id not found, id: 1"));
 
         mockMvc.perform(put("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(taskDTO)))
                 .andExpect(status().isNotFound());
 
-        verify(taskService).updateTasks(1L, taskDTO);
+        verify(taskService).updateTask(1L, taskDTO);
     }
 
     @Test
     void deleteTask_shouldDeleteTaskSuccessfully() throws Exception {
-        when(taskService.deleteTasks(1L)).thenReturn("Task with ID 1 has been successfully deleted.");
+        when(taskService.deleteTask(1L)).thenReturn("Task with ID 1 has been successfully deleted.");
 
         mockMvc.perform(delete("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(content().string("Task with ID 1 has been successfully deleted."));
 
-        verify(taskService).deleteTasks(1L);
+        verify(taskService).deleteTask(1L);
     }
 
     @Test
     void deleteTask_shouldReturn404WhenTaskNotFound() throws Exception {
-        when(taskService.deleteTasks(1L)).thenThrow(new TaskNotFoundException("Task item with id not found, id: 1"));
+        when(taskService.deleteTask(1L)).thenThrow(new TaskNotFoundException("Task item with id not found, id: 1"));
 
         mockMvc.perform(delete("/api/v1/task/1")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
 
-        verify(taskService).deleteTasks(1L);
+        verify(taskService).deleteTask(1L);
     }
 
     @Test
